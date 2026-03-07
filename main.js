@@ -40,6 +40,16 @@ function createWindow() {
 
 app.whenReady().then(createWindow)
 app.on('window-all-closed', () => app.quit())
+app.on('before-quit', () => {
+  // 确保退出时没有残留子进程占用安装目录文件
+  try {
+    if (process.platform === 'win32') {
+      const { execSync } = require('child_process')
+      // 结束所有以本进程为父进程的子进程（GPU/renderer/utility）
+      execSync(`wmic process where "ParentProcessId=${process.pid}" call terminate`, { timeout: 3000 })
+    }
+  } catch {}
+})
 
 // ============================================================
 // 系统检测
