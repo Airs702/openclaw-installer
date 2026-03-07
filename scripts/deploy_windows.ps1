@@ -134,8 +134,14 @@ Success "npm 镜像已设置为淘宝源"
 # ============================================================
 Step "第四步：安装 OpenClaw"
 
-& git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/" 2>$null
-& git config --global --add url."https://github.com/".insteadOf "git@github.com:" 2>$null
+# git SSH → HTTPS 重定向（解决 libsignal-node 等 git 依赖无法访问 GitHub 的问题）
+& git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" 2>$null
+& git config --global url."https://github.com/".insteadOf "git@github.com:" 2>$null
+# 通过 npmmirror 代理 GitHub raw 内容（部分 git 依赖走这里）
+& git config --global url."https://hub.nuaa.cf/".insteadOf "https://github.com/" 2>$null
+
+# npm 额外配置：允许 git 依赖走 https，禁用 ssh
+& npm config set prefer-online true 2>$null
 
 $ocInstalled = $false
 try { & openclaw --version 2>$null | Out-Null; $ocInstalled = $true } catch {}
