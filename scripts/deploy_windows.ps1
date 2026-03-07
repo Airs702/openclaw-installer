@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # OpenClaw 自动部署脚本 - Windows PowerShell 版本
 
 # 设置 UTF-8 编码
