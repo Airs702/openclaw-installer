@@ -10,7 +10,7 @@
   },
   "build": {
     "appId": "com.internal.openclaw-installer",
-    "productName": "OpenClaw 安装器",
+    "productName": "OpenClaw-Installer",
     "files": [
       "main.js",
       "preload.js",
