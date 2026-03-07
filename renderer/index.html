@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>OpenClaw 安装器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 第1步：欢迎 -->
+<div id="step-welcome" class="step active">
+  <div class="logo">🦞</div>
+  <h1>OpenClaw 部署工具</h1>
+  <p class="subtitle">内部使用 v1.0 · 一键完成环境配置</p>
+
+  <div class="steps-preview">
+    <div class="step-item">① 检测 / 安装 Node.js</div>
+    <div class="step-item">② 安装 OpenClaw</div>
+    <div class="step-item">③ 写入配置 &amp; 启动 Gateway</div>
+  </div>
+
+  <div class="mode-toggle">
+    <label class="toggle-label">
+      <input type="checkbox" id="test-mode-check">
+      <span class="toggle-text">测试模式（不写入配置，不重启 Gateway）</span>
+    </label>
+  </div>
+
+  <button class="btn-primary" id="btn-next-welcome">开始部署 →</button>
+</div>
+
+<!-- 第2步：填写 API Key -->
+<div id="step-apikey" class="step">
+  <div class="step-header">
+    <span class="step-num">第 1 步 / 3</span>
+    <h2>填写 Kimi API Key</h2>
+  </div>
+  <p class="hint">在 <strong>platform.moonshot.cn</strong> 控制台获取，格式为 <code>sk-xxxxxxxx</code></p>
+
+  <div class="input-group">
+    <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
+    <button class="btn-eye" id="btn-toggle-eye" title="显示/隐藏">👁</button>
+  </div>
+  <div id="key-error" class="error-msg"></div>
+
+  <div class="btn-row">
+    <button class="btn-secondary" id="btn-back-apikey">← 返回</button>
+    <button class="btn-primary" id="btn-next-apikey">下一步 →</button>
+  </div>
+</div>
+
+<!-- 第3步：安装中 -->
+<div id="step-installing" class="step">
+  <div class="step-header">
+    <span class="step-num">第 2 步 / 3</span>
+    <h2>正在部署...</h2>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+  <div id="progress-label" class="progress-label">准备中...</div>
+
+  <div id="log-box"></div>
+</div>
+
+<!-- 第4步：完成 -->
+<div id="step-done" class="step">
+  <div class="done-icon">✅</div>
+  <h2>部署完成！</h2>
+
+  <div class="info-card" id="info-card">
+    <div class="info-row">
+      <span class="info-label">模型</span>
+      <span class="info-value">Kimi K2.5 (moonshot)</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Gateway</span>
+      <span class="info-value" id="gw-url">—</span>
+    </div>
+  </div>
+
+  <div class="btn-row center">
+    <button class="btn-primary" id="btn-open-web">打开网页版 →</button>
+    <button class="btn-secondary" id="btn-quit">退出</button>
+  </div>
+</div>
+
+<!-- 错误页 -->
+<div id="step-error" class="step">
+  <div class="done-icon">❌</div>
+  <h2>部署失败</h2>
+  <p id="error-detail" class="error-detail"></p>
+  <div class="btn-row center">
+    <button class="btn-secondary" id="btn-restart">重新开始</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

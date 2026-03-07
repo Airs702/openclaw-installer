@@ -1,0 +1,67 @@
+{
+  "name": "openclaw-installer",
+  "version": "1.0.0",
+  "description": "OpenClaw 一键部署工具",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.internal.openclaw-installer",
+    "productName": "OpenClaw 安装器",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "scripts/**"
+    ],
+    "extraResources": [
+      {
+        "from": "scripts/",
+        "to": "scripts/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052"
+    },
+    "dmg": {
+      "title": "OpenClaw 安装器"
+    }
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

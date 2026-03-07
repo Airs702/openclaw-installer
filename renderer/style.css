@@ -1,0 +1,190 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #0f1117;
+  color: #e8e8e8;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  -webkit-app-region: drag;
+}
+
+.step {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  width: 480px;
+  padding: 40px 48px;
+  -webkit-app-region: no-drag;
+}
+.step.active { display: flex; }
+
+/* 欢迎页 */
+.logo { font-size: 56px; margin-bottom: 12px; }
+h1 { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: #666; margin-bottom: 32px; }
+
+.steps-preview {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.step-item {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.mode-toggle { margin-bottom: 32px; }
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #888;
+}
+.toggle-label input { width: 16px; height: 16px; cursor: pointer; accent-color: #5b8af5; }
+.toggle-text { user-select: none; }
+
+/* 步骤页通用 */
+.step-header { width: 100%; margin-bottom: 20px; }
+.step-num { font-size: 12px; color: #5b8af5; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+h2 { font-size: 22px; font-weight: 700; color: #fff; margin-top: 4px; }
+
+.hint { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.6; width: 100%; }
+.hint code { background: #1e2130; padding: 2px 6px; border-radius: 4px; color: #7eb8f7; font-size: 12px; }
+
+/* API Key 输入 */
+.input-group {
+  display: flex;
+  width: 100%;
+  margin-bottom: 8px;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1d27;
+  transition: border-color 0.2s;
+}
+.input-group:focus-within { border-color: #5b8af5; }
+.input-group input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #e8e8e8;
+  font-family: "Consolas", monospace;
+}
+.btn-eye {
+  background: transparent;
+  border: none;
+  padding: 0 14px;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.btn-eye:hover { opacity: 1; }
+
+.error-msg { font-size: 12px; color: #f56565; min-height: 18px; width: 100%; margin-bottom: 4px; }
+
+/* 安装进度 */
+.progress-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: #1e2130;
+  border-radius: 2px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5b8af5, #7c5bf5);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.progress-label { font-size: 12px; color: #666; margin-bottom: 16px; width: 100%; }
+
+#log-box {
+  width: 100%;
+  height: 220px;
+  background: #0a0c12;
+  border: 1px solid #1e2130;
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-y: auto;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #aaa;
+}
+#log-box .log-success { color: #68d391; }
+#log-box .log-warn    { color: #f6c90e; }
+#log-box .log-error   { color: #f56565; }
+#log-box .log-step    { color: #7eb8f7; font-weight: bold; }
+
+/* 完成页 */
+.done-icon { font-size: 52px; margin-bottom: 12px; }
+.info-card {
+  width: 100%;
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 20px 0 28px;
+}
+.info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.info-row + .info-row { border-top: 1px solid #1e2130; }
+.info-label { color: #666; }
+.info-value { color: #e8e8e8; font-family: monospace; font-size: 12px; word-break: break-all; text-align: right; max-width: 280px; }
+
+/* 错误页 */
+.error-detail { font-size: 13px; color: #f56565; margin: 12px 0 28px; text-align: center; line-height: 1.6; }
+
+/* 按钮 */
+.btn-primary {
+  background: #5b8af5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-primary:hover { background: #4a79e4; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { background: #2a2d3a; color: #555; cursor: not-allowed; }
+
+.btn-secondary {
+  background: transparent;
+  color: #888;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-secondary:hover { border-color: #5b8af5; color: #e8e8e8; }
+
+.btn-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 20px;
+  gap: 12px;
+}
+.btn-row.center { justify-content: center; }
