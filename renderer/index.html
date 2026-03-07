@@ -3,98 +3,221 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
-<title>OpenClaw 安装器</title>
+<title>OpenClaw 部署工具</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="app-layout">
 
-<!-- 第1步：欢迎 -->
-<div id="step-welcome" class="step active">
-  <div class="logo">🦞</div>
-  <h1>OpenClaw 部署工具</h1>
-  <p class="subtitle">内部使用 v1.0 · 一键完成环境配置</p>
-
-  <div class="steps-preview">
-    <div class="step-item">① 检测 / 安装 Node.js</div>
-    <div class="step-item">② 安装 OpenClaw</div>
-    <div class="step-item">③ 写入配置 &amp; 启动 Gateway</div>
-  </div>
-
-  <div class="mode-toggle">
-    <label class="toggle-label">
-      <input type="checkbox" id="test-mode-check">
-      <span class="toggle-text">测试模式（不写入配置，不重启 Gateway）</span>
-    </label>
-  </div>
-
-  <button class="btn-primary" id="btn-next-welcome">开始部署 →</button>
-</div>
-
-<!-- 第2步：填写 API Key -->
-<div id="step-apikey" class="step">
-  <div class="step-header">
-    <span class="step-num">第 1 步 / 3</span>
-    <h2>填写 Kimi API Key</h2>
-  </div>
-  <p class="hint">在 <strong>platform.moonshot.cn</strong> 控制台获取，格式为 <code>sk-xxxxxxxx</code></p>
-
-  <div class="input-group">
-    <input type="password" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
-    <button class="btn-eye" id="btn-toggle-eye" title="显示/隐藏">👁</button>
-  </div>
-  <div id="key-error" class="error-msg"></div>
-
-  <div class="btn-row">
-    <button class="btn-secondary" id="btn-back-apikey">← 返回</button>
-    <button class="btn-primary" id="btn-next-apikey">下一步 →</button>
-  </div>
-</div>
-
-<!-- 第3步：安装中 -->
-<div id="step-installing" class="step">
-  <div class="step-header">
-    <span class="step-num">第 2 步 / 3</span>
-    <h2>正在部署...</h2>
-  </div>
-
-  <div class="progress-bar-wrap">
-    <div class="progress-bar" id="progress-bar"></div>
-  </div>
-  <div id="progress-label" class="progress-label">准备中...</div>
-
-  <div id="log-box"></div>
-</div>
-
-<!-- 第4步：完成 -->
-<div id="step-done" class="step">
-  <div class="done-icon">✅</div>
-  <h2>部署完成！</h2>
-
-  <div class="info-card" id="info-card">
-    <div class="info-row">
-      <span class="info-label">模型</span>
-      <span class="info-value">Kimi K2.5 (moonshot)</span>
+  <!-- 侧边栏 -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🦞</div>
+      <span class="logo-text">OpenClaw</span>
+      <span class="logo-sub">一键部署工具</span>
     </div>
-    <div class="info-row">
-      <span class="info-label">Gateway</span>
-      <span class="info-value" id="gw-url">—</span>
-    </div>
-  </div>
+    <ul class="nav-list">
+      <li class="nav-item active" data-tab="config">
+        <span class="nav-icon">⚙️</span><span>部署配置</span>
+      </li>
+      <li class="nav-item" data-tab="deploy">
+        <span class="nav-icon">🚀</span><span>开始部署</span>
+      </li>
+      <li class="nav-item" data-tab="done">
+        <span class="nav-icon">✅</span><span>部署完成</span>
+      </li>
+      <li class="nav-item" data-tab="ops">
+        <span class="nav-icon">🔧</span><span>运维管理</span>
+      </li>
+    </ul>
+    <div class="sidebar-footer">v1.1.0</div>
+  </nav>
 
-  <div class="btn-row center">
-    <button class="btn-primary" id="btn-open-web">打开网页版 →</button>
-    <button class="btn-secondary" id="btn-quit">退出</button>
-  </div>
+  <!-- 主内容区 -->
+  <main class="content">
+
+    <!-- ===== 部署配置 ===== -->
+    <div id="tab-config" class="tab active">
+      <div class="tab-header"><h2>部署配置</h2><p class="tab-sub">选择部署方式并配置 AI 模型</p></div>
+
+      <div class="section-label">系统环境</div>
+      <div class="sys-card" id="sys-card">
+        <div class="sys-item"><span class="sys-label">平台</span><span class="sys-val" id="sys-platform">检测中...</span></div>
+        <div class="sys-item"><span class="sys-label">Node.js</span><span class="sys-val" id="sys-node">检测中...</span></div>
+        <div class="sys-item"><span class="sys-label">内存</span><span class="sys-val" id="sys-mem">检测中...</span></div>
+        <div class="sys-item"><span class="sys-label">磁盘</span><span class="sys-val" id="sys-disk">检测中...</span></div>
+        <div class="sys-item"><span class="sys-label">端口 18789</span><span class="sys-val" id="sys-port">检测中...</span></div>
+      </div>
+
+      <div class="section-label">模型配置</div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>AI 模型</label>
+          <select id="model-provider">
+            <option value="moonshot">Kimi (Moonshot)</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="qwen">通义千问 (Qwen)</option>
+            <option value="anthropic">Claude (Anthropic)</option>
+            <option value="custom">自定义</option>
+          </select>
+        </div>
+        <div class="form-group half">
+          <label>模型名称</label>
+          <input type="text" id="model-name" placeholder="kimi-k2-5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <div class="input-with-eye">
+          <input type="password" id="api-key" placeholder="sk-..." autocomplete="off" spellcheck="false">
+          <button class="btn-eye" id="btn-eye">👁</button>
+        </div>
+        <div class="field-hint" id="key-hint">在 platform.moonshot.cn 获取</div>
+      </div>
+      <div class="form-group" id="group-api-base">
+        <label>API 地址</label>
+        <input type="text" id="api-base" placeholder="https://api.moonshot.cn/v1">
+      </div>
+
+      <div class="section-label section-toggle">
+        飞书通道
+        <label class="toggle-switch">
+          <input type="checkbox" id="feishu-enable">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="feishu-fields" class="hidden">
+        <div class="form-row">
+          <div class="form-group half">
+            <label>App ID</label>
+            <input type="text" id="feishu-app-id" placeholder="cli_...">
+          </div>
+          <div class="form-group half">
+            <label>App Secret</label>
+            <input type="password" id="feishu-app-secret" placeholder="...">
+          </div>
+        </div>
+        <div class="feishu-guide">
+          <div class="guide-title">飞书机器人配置步骤</div>
+          <ol class="guide-steps">
+            <li>进入飞书开放平台 → 创建企业自建应用</li>
+            <li>开启「机器人」能力</li>
+            <li>添加权限：im:message、im:chat</li>
+            <li>发布应用版本并审核通过</li>
+            <li>将机器人添加到目标群组</li>
+            <li>填写上方 App ID 和 App Secret</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="section-label">部署选项</div>
+      <label class="checkbox-label">
+        <input type="checkbox" id="test-mode">
+        <span>测试模式（不写入配置，不重启 Gateway）</span>
+      </label>
+
+      <div class="tab-footer">
+        <div id="config-error" class="error-msg"></div>
+        <button class="btn-primary" id="btn-start-deploy">开始部署 →</button>
+      </div>
+    </div>
+
+    <!-- ===== 开始部署 ===== -->
+    <div id="tab-deploy" class="tab">
+      <div class="tab-header">
+        <h2>正在部署</h2>
+        <button class="btn-danger-sm" id="btn-cancel" style="display:none">取消</button>
+      </div>
+
+      <div class="steps-track">
+        <div class="step-dot" id="sdot-0"><span class="dot"></span><span class="dot-label">检测环境</span></div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="sdot-1"><span class="dot"></span><span class="dot-label">安装依赖</span></div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="sdot-2"><span class="dot"></span><span class="dot-label">写入配置</span></div>
+        <div class="step-line"></div>
+        <div class="step-dot" id="sdot-3"><span class="dot"></span><span class="dot-label">启动服务</span></div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+      <div class="progress-label" id="progress-label">准备中...</div>
+
+      <div id="log-box"></div>
+
+      <div class="tab-footer" id="deploy-footer" style="display:none">
+        <button class="btn-secondary" id="btn-redeploy-from-log">重新部署</button>
+      </div>
+    </div>
+
+    <!-- ===== 部署完成 ===== -->
+    <div id="tab-done" class="tab">
+      <div class="done-hero">
+        <div class="done-icon">✅</div>
+        <h2>部署完成！</h2>
+        <p class="done-sub">OpenClaw Gateway 已成功启动</p>
+      </div>
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">模型</span>
+          <span class="info-value" id="done-model">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Gateway 地址</span>
+          <span class="info-value" id="done-url">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">访问令牌</span>
+          <span class="info-value" id="done-token">—</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn-primary" id="btn-open-web">打开网页版 →</button>
+        <button class="btn-secondary" id="btn-go-ops">运维管理</button>
+        <button class="btn-secondary" id="btn-redeploy">重新部署</button>
+      </div>
+    </div>
+
+    <!-- ===== 运维管理 ===== -->
+    <div id="tab-ops" class="tab">
+      <div class="tab-header"><h2>运维管理</h2><p class="tab-sub">监控和管理已部署的 OpenClaw 实例</p></div>
+
+      <div class="section-label">服务状态</div>
+      <div class="status-card">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">检测中...</span>
+        <button class="btn-sm" id="btn-refresh-status">刷新</button>
+      </div>
+
+      <div class="section-label">操作</div>
+      <div class="ops-grid">
+        <button class="ops-btn" id="btn-ops-restart">
+          <span class="ops-icon">🔄</span><span>重启服务</span>
+        </button>
+        <button class="ops-btn" id="btn-ops-stop">
+          <span class="ops-icon">⏹</span><span>停止服务</span>
+        </button>
+        <button class="ops-btn" id="btn-ops-logs">
+          <span class="ops-icon">📋</span><span>查看日志</span>
+        </button>
+        <button class="ops-btn danger" id="btn-ops-uninstall">
+          <span class="ops-icon">🗑</span><span>卸载</span>
+        </button>
+      </div>
+
+      <div class="section-label" id="ops-log-label" style="display:none">日志内容</div>
+      <div id="ops-log-box" class="hidden"></div>
+
+      <div id="ops-msg" class="ops-msg"></div>
+    </div>
+
+  </main>
 </div>
 
-<!-- 错误页 -->
-<div id="step-error" class="step">
-  <div class="done-icon">❌</div>
-  <h2>部署失败</h2>
-  <p id="error-detail" class="error-detail"></p>
-  <div class="btn-row center">
-    <button class="btn-secondary" id="btn-restart">重新开始</button>
-  </div>
+<!-- Toast 通知 -->
+<div class="toast" id="toast" style="display:none">
+  <span id="toast-msg"></span>
 </div>
 
 <script src="app.js"></script>
