@@ -1,6 +1,6 @@
 {
   "name": "openclaw-installer",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "Internal",
   "main": "main.js",
   "scripts": {
@@ -64,5 +64,8 @@
   "devDependencies": {
     "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "ssh2": "^1.16.0"
   }
 }
