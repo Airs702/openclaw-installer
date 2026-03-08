@@ -100,7 +100,7 @@ document.querySelectorAll('input[name="deploy-mode"]').forEach(r => r.addEventLi
 const LLM_CONFIGS = {
   deepseek:     { baseUrl: 'https://api.deepseek.com',                              model: 'deepseek-chat' },
   qwen:         { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',     model: 'qwen-max' },
-  kimi:         { baseUrl: 'https://api.moonshot.cn/v1',                            model: 'moonshot-v1-8k' },
+  kimi:         { baseUrl: 'https://api.moonshot.cn/v1',                            model: 'kimi-k2.5' },
   shengsuanyun: { baseUrl: 'https://api.shengsuanyun.com/v1',                       model: '' },
   anthropic:    { baseUrl: 'https://api.anthropic.com',                             model: 'claude-sonnet-4-20250514' },
   custom:       { baseUrl: '', model: '' },
