@@ -154,7 +154,8 @@ ipcMain.handle('deploy:preflight', async (_event, config) => {
     if (hasOldClaw) warnings.push({ code: 'OLD_OPENCLAW', message: '检测到已安装的旧版 OpenClaw，继续安装可能导致版本冲突。建议先卸载旧版再继续。' })
 
     // 检测 GitHub 443 连通性（仅在没有离线包时才需要）
-    const bundledBin = path.join(process.resourcesPath || path.join(__dirname, '..', 'resources'), 'bundled', 'node_modules', '.bin', process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw')
+    const bundledName = config.imageChoice === 'official' ? 'bundled-official' : 'bundled-zh'
+    const bundledBin = path.join(process.resourcesPath || path.join(__dirname, '..', 'resources'), bundledName, 'node_modules', '.bin', process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw')
     const hasBundled = fs.existsSync(bundledBin)
     if (!hasBundled) {
       const githubOk = await new Promise(resolve => {
@@ -1164,42 +1165,44 @@ async function ensureGitLocal(event, env = {}) {
 }
 
 async function installOpenclawNode(config, event, env = {}) {
-  // 优先使用打包进安装包的离线 bundled 目录，无需访问 GitHub 或 npm
-  const bundledDir = path.join(process.resourcesPath || path.join(__dirname, '..', 'resources'), 'bundled')
+  // 根据 imageChoice 选择对应的离线包目录
+  const isOfficial = config.imageChoice === 'official'
+  const bundledName = isOfficial ? 'bundled-official' : 'bundled-zh'
+  const bundledDir = path.join(process.resourcesPath || path.join(__dirname, '..', 'resources'), bundledName)
   const bundledBin = path.join(bundledDir, 'node_modules', '.bin')
   const bundledOpenclawBin = path.join(bundledBin, process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw')
 
   if (fs.existsSync(bundledOpenclawBin)) {
-    event.sender.send('deploy:log', '⏳ 正在从离线包安装 OpenClaw（无需网络）...')
+    const label = isOfficial ? 'OpenClaw 官方版' : 'OpenClaw 汉化版'
+    event.sender.send('deploy:log', `⏳ 正在从离线包安装 ${label}（无需网络）...`)
 
-    // 把 bundled/node_modules/.bin 加入 PATH，让 openclaw 命令全局可用
     const globalNpmBin = await execPromise('npm bin -g', 8000, env).then(s => s.trim()).catch(() => {
       if (process.platform === 'win32') return path.join(process.env.APPDATA || '', 'npm')
       return path.join(os.homedir(), '.npm-global', 'bin')
     })
 
-    // 复制 openclaw 可执行文件到全局 npm bin
     if (!fs.existsSync(globalNpmBin)) fs.mkdirSync(globalNpmBin, { recursive: true })
 
+    // 找到 openclaw.mjs 入口文件
+    const pkgSubDir = isOfficial
+      ? path.join(bundledDir, 'node_modules', 'openclaw')
+      : path.join(bundledDir, 'node_modules', '@qingchencloud', 'openclaw-zh')
+    const openclawMjs = path.join(pkgSubDir, 'openclaw.mjs')
+
     if (process.platform === 'win32') {
-      // Windows: 复制 .cmd 和 .ps1 包装脚本，指向 bundled 里的 mjs
-      const openclawMjs = path.join(bundledDir, 'node_modules', '@qingchencloud', 'openclaw-zh', 'openclaw.mjs')
       const cmdContent = `@echo off\nnode "${openclawMjs}" %*\n`
       const ps1Content = `#!/usr/bin/env pwsh\nnode "${openclawMjs}" @args\n`
       fs.writeFileSync(path.join(globalNpmBin, 'openclaw.cmd'), cmdContent, 'utf8')
       fs.writeFileSync(path.join(globalNpmBin, 'openclaw.ps1'), ps1Content, 'utf8')
     } else {
-      // macOS/Linux: 创建软链接或 shell wrapper
-      const openclawMjs = path.join(bundledDir, 'node_modules', '@qingchencloud', 'openclaw-zh', 'openclaw.mjs')
       const wrapperPath = path.join(globalNpmBin, 'openclaw')
       fs.writeFileSync(wrapperPath, `#!/bin/sh\nexec node "${openclawMjs}" "$@"\n`, 'utf8')
       fs.chmodSync(wrapperPath, 0o755)
     }
 
-    // 把 bundled/node_modules 加入 NODE_PATH，让 openclaw 能找到自己的依赖
     env.NODE_PATH = path.join(bundledDir, 'node_modules')
 
-    event.sender.send('deploy:log', '✓ OpenClaw 离线安装完成')
+    event.sender.send('deploy:log', `✓ ${label} 离线安装完成`)
     return
   }
 

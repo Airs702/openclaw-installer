@@ -11,15 +11,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 22 (for openclaw-zh bundling)
+      - name: Setup Node.js 22 (for openclaw bundling)
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Bundle openclaw-zh (macOS)
         run: |
-          mkdir -p bundled
-          npm install --prefix bundled @qingchencloud/openclaw-zh --no-save
+          mkdir -p bundled-zh
+          npm install --prefix bundled-zh @qingchencloud/openclaw-zh --no-save
+        env:
+          npm_config_registry: https://registry.npmmirror.com
+
+      - name: Bundle openclaw official (macOS)
+        run: |
+          mkdir -p bundled-official
+          npm install --prefix bundled-official openclaw --no-save
         env:
           npm_config_registry: https://registry.npmmirror.com
 
@@ -46,15 +53,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 22 (for openclaw-zh bundling)
+      - name: Setup Node.js 22 (for openclaw bundling)
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Bundle openclaw-zh (Windows)
         run: |
-          mkdir bundled
-          npm install --prefix bundled @qingchencloud/openclaw-zh --no-save
+          mkdir bundled-zh
+          npm install --prefix bundled-zh @qingchencloud/openclaw-zh --no-save
+        env:
+          npm_config_registry: https://registry.npmmirror.com
+
+      - name: Bundle openclaw official (Windows)
+        run: |
+          mkdir bundled-official
+          npm install --prefix bundled-official openclaw --no-save
         env:
           npm_config_registry: https://registry.npmmirror.com
 
