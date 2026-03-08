@@ -22,9 +22,12 @@
       {
         "from": "scripts/",
         "to": "scripts/",
-        "filter": [
-          "**/*"
-        ]
+        "filter": ["**/*"]
+      },
+      {
+        "from": "bundled/",
+        "to": "bundled/",
+        "filter": ["**/*"]
       }
     ],
     "mac": {
@@ -66,6 +69,6 @@
     "electron-builder": "^24.13.3"
   },
   "dependencies": {
-    "ssh2": "^1.16.0"
+    "ssh2": "^1.17.0"
   }
 }

@@ -11,13 +11,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22 (for openclaw-zh bundling)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
-      - name: Install dependencies
+      - name: Bundle openclaw-zh (macOS)
+        run: |
+          mkdir -p bundled
+          npm install --prefix bundled @qingchencloud/openclaw-zh --no-save
+        env:
+          npm_config_registry: https://registry.npmmirror.com
+
+      - name: Install GUI dependencies
         run: npm ci
         env:
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
@@ -40,13 +46,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22 (for openclaw-zh bundling)
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
-      - name: Install dependencies
+      - name: Bundle openclaw-zh (Windows)
+        run: |
+          mkdir bundled
+          npm install --prefix bundled @qingchencloud/openclaw-zh --no-save
+        env:
+          npm_config_registry: https://registry.npmmirror.com
+
+      - name: Install GUI dependencies
         run: npm ci
         env:
           ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
