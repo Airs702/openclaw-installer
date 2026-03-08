@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   manage: {
     status: (config) => ipcRenderer.invoke('manage:status', config),
+    agents: (config) => ipcRenderer.invoke('manage:agents', config),
     restart: (config) => ipcRenderer.invoke('manage:restart', config),
     stop: (config) => ipcRenderer.invoke('manage:stop', config),
     update: (config) => ipcRenderer.invoke('manage:update', config),

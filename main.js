@@ -583,6 +583,68 @@ ipcMain.handle('manage:approveDevices', async (_e, config) => {
 })
 
 // ============================================================
+// Agent 心跳监测
+// ============================================================
+ipcMain.handle('manage:agents', async (_e, config) => {
+  const host = config?.target === 'ssh' ? (config.ssh?.host || '127.0.0.1') : '127.0.0.1'
+  const base = `http://${host}:18789`
+  const token = config?.token || ''
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+  function httpGet(url, timeoutMs = 5000) {
+    return new Promise((resolve, reject) => {
+      const mod = require('http')
+      const req = mod.get(url, { headers, timeout: timeoutMs }, res => {
+        let body = ''
+        res.on('data', d => { body += d })
+        res.on('end', () => {
+          try { resolve({ status: res.statusCode, data: JSON.parse(body) }) }
+          catch { resolve({ status: res.statusCode, data: body }) }
+        })
+      })
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')) })
+      req.on('error', reject)
+    })
+  }
+
+  try {
+    // 先检查服务是否在线
+    const health = await httpGet(`${base}/api/health`, 3000).catch(() => null)
+    if (!health || health.status >= 500) return { online: false, agents: [] }
+
+    // 拉取 agents 列表
+    const agentsRes = await httpGet(`${base}/api/agents`, 4000).catch(() => null)
+    if (!agentsRes || agentsRes.status !== 200) return { online: true, agents: [] }
+
+    const list = Array.isArray(agentsRes.data) ? agentsRes.data
+      : Array.isArray(agentsRes.data?.agents) ? agentsRes.data.agents
+      : Array.isArray(agentsRes.data?.data) ? agentsRes.data.data : []
+
+    const now = Date.now()
+    const agents = list.map(a => {
+      const lastActive = a.lastActiveAt || a.last_active_at || a.updatedAt || a.updated_at || null
+      const lastActiveMs = lastActive ? new Date(lastActive).getTime() : null
+      const idleSec = lastActiveMs ? Math.floor((now - lastActiveMs) / 1000) : null
+      // 超过 5 分钟无活动视为可能超时
+      const status = a.status || (idleSec !== null && idleSec > 300 ? 'idle' : 'active')
+      return {
+        id: a.id || a.agentId || a.name,
+        name: a.name || a.id || '未命名',
+        status,
+        idleSec,
+        lastActive,
+        model: a.model || a.llm || null,
+        task: a.currentTask || a.task || a.description || null,
+      }
+    })
+
+    return { online: true, agents }
+  } catch (e) {
+    return { online: false, agents: [], error: e.message }
+  }
+})
+
+// ============================================================
 // 技能插件
 // ============================================================
 ipcMain.handle('plugins:list', async (_e, config) => {

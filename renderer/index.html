@@ -405,6 +405,20 @@
           </div>
         </div>
 
+        <!-- Agent 心跳监测面板 -->
+        <div class="card glass agents-monitor-card">
+          <div class="status-header">
+            <h3>🤖 Agent 监测</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="agents-poll-badge" id="agents-poll-badge">自动刷新</span>
+              <button class="btn btn-sm btn-ghost" id="btn-refresh-agents">🔄 刷新</button>
+            </div>
+          </div>
+          <div id="agents-list-wrap">
+            <div class="agents-empty" id="agents-empty">服务未运行或暂无 Agent</div>
+          </div>
+        </div>
+
         <!-- 操作按钮 -->
         <div class="card glass">
           <h3>常用操作</h3>

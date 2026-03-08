@@ -32,6 +32,9 @@ function switchTab(tabId) {
   if (tabId === 'manage') {
     refreshLastDeployCard()
     refreshStatus()
+    startAgentsPoll()
+  } else {
+    stopAgentsPoll()
   }
 }
 
@@ -769,6 +772,81 @@ async function refreshStatus() {
 }
 
 document.getElementById('btn-refresh-status').addEventListener('click', refreshStatus)
+
+// ============================================================
+// Agent 心跳监测
+// ============================================================
+let agentsPollTimer = null
+
+function formatIdleTime(sec) {
+  if (sec === null || sec === undefined) return '未知'
+  if (sec < 60) return `${sec}秒前`
+  if (sec < 3600) return `${Math.floor(sec / 60)}分钟前`
+  return `${Math.floor(sec / 3600)}小时前`
+}
+
+function agentStatusLabel(agent) {
+  if (agent.status === 'running' || agent.status === 'active') return { cls: 'agent-dot running', text: '运行中' }
+  if (agent.status === 'idle' || (agent.idleSec !== null && agent.idleSec > 300)) return { cls: 'agent-dot idle', text: '空闲/可能超时' }
+  if (agent.status === 'error' || agent.status === 'failed') return { cls: 'agent-dot error', text: '异常' }
+  if (agent.status === 'stopped') return { cls: 'agent-dot stopped', text: '已停止' }
+  return { cls: 'agent-dot idle', text: agent.status || '未知' }
+}
+
+async function refreshAgents() {
+  const wrap = document.getElementById('agents-list-wrap')
+  const empty = document.getElementById('agents-empty')
+  if (!wrap) return
+
+  const cfg = { ...deployConfig }
+  if (lastDeployState?.token) cfg.token = lastDeployState.token
+
+  try {
+    const result = await api.manage.agents(cfg)
+    if (!result.online || !result.agents.length) {
+      wrap.innerHTML = ''
+      const msg = document.createElement('div')
+      msg.className = 'agents-empty'
+      msg.textContent = result.online ? '暂无运行中的 Agent' : '服务未运行或无法连接'
+      wrap.appendChild(msg)
+      return
+    }
+
+    wrap.innerHTML = result.agents.map(a => {
+      const { cls, text } = agentStatusLabel(a)
+      const idleWarn = a.idleSec !== null && a.idleSec > 300
+      return `<div class="agent-row${idleWarn ? ' agent-warn' : ''}">
+        <span class="${cls}"></span>
+        <div class="agent-info">
+          <span class="agent-name">${a.name}</span>
+          ${a.task ? `<span class="agent-task">${a.task}</span>` : ''}
+          ${a.model ? `<span class="agent-model">${a.model}</span>` : ''}
+        </div>
+        <div class="agent-meta">
+          <span class="agent-status-text">${text}</span>
+          <span class="agent-last-active">${a.lastActive ? '活跃：' + formatIdleTime(a.idleSec) : ''}</span>
+          ${idleWarn ? '<span class="agent-timeout-badge">⚠ 超时</span>' : ''}
+        </div>
+      </div>`
+    }).join('')
+  } catch {
+    wrap.innerHTML = '<div class="agents-empty">检测失败</div>'
+  }
+}
+
+function startAgentsPoll() {
+  stopAgentsPoll()
+  refreshAgents()
+  agentsPollTimer = setInterval(refreshAgents, 15000)
+  const badge = document.getElementById('agents-poll-badge')
+  if (badge) badge.textContent = '每15秒刷新'
+}
+
+function stopAgentsPoll() {
+  if (agentsPollTimer) { clearInterval(agentsPollTimer); agentsPollTimer = null }
+}
+
+document.getElementById('btn-refresh-agents').addEventListener('click', refreshAgents)
 
 async function manageAction(action, confirmMsg) {
   if (manageBusy) { showToast('操作进行中，请稍候...', 'error'); return }
