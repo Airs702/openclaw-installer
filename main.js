@@ -812,11 +812,13 @@ function buildOnboardArgs(config) {
   const first = config.llms?.[0] ?? config.llm
   if (first?.provider && first?.apiKey) {
     const providerMap = {
-      deepseek: { authChoice: 'custom-api-key', extra: ['--custom-base-url https://api.deepseek.com/v1', '--custom-model-id deepseek-chat', '--custom-compatibility openai'] },
-      qwen: { authChoice: 'custom-api-key', extra: ['--custom-base-url https://dashscope.aliyuncs.com/compatible-mode/v1', '--custom-model-id qwen-plus', '--custom-compatibility openai'] },
-      moonshot: { authChoice: 'moonshot-api-key', extra: [] },
-      kimi: { authChoice: 'moonshot-api-key', extra: [] },
-      custom: { authChoice: 'custom-api-key', extra: [] },
+      deepseek:     { authChoice: 'custom-api-key', extra: ['--custom-base-url https://api.deepseek.com/v1', '--custom-model-id deepseek-chat', '--custom-compatibility openai'] },
+      qwen:         { authChoice: 'custom-api-key', extra: ['--custom-base-url https://dashscope.aliyuncs.com/compatible-mode/v1', '--custom-model-id qwen-plus', '--custom-compatibility openai'] },
+      kimi:         { authChoice: 'custom-api-key', extra: ['--custom-base-url https://api.moonshot.cn/v1', '--custom-model-id moonshot-v1-8k', '--custom-compatibility openai'] },
+      moonshot:     { authChoice: 'moonshot-api-key', extra: [] },
+      shengsuanyun: { authChoice: 'shengsuanyun-api-key', extra: [] },
+      anthropic:    { authChoice: 'custom-api-key', extra: ['--custom-base-url https://api.anthropic.com', '--custom-compatibility anthropic'] },
+      custom:       { authChoice: 'custom-api-key', extra: [] },
     }
     const m = providerMap[first.provider] || providerMap.custom
     args.push(`--auth-choice ${m.authChoice}`)
