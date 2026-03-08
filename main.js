@@ -500,7 +500,7 @@ async function executeSteps(event, steps, config) {
     if (deviceApproveInterval) clearInterval(deviceApproveInterval)
     deviceApproveInterval = setInterval(async () => {
       try { await execPromise(dockerCmd('docker exec openclaw openclaw devices approve --latest 2>/dev/null || true'), 5000) } catch {}
-    }, 5000)
+    }, 30000)
     execPromise(dockerCmd('docker exec openclaw openclaw devices approve --latest 2>/dev/null || true'), 5000).catch(() => {})
   }
 }
@@ -737,7 +737,7 @@ function execPromise(cmd, timeout = 300000, env = {}) {
       actualCmd = cmd.replace(/2>\/dev\/null/g, '2>nul').replace(/>\/dev\/null/g, '>nul').replace(/\|\|\s*true\b/g, '|| ver>nul')
       actualCmd = `chcp 65001 >nul & ${actualCmd}`
     }
-    exec(actualCmd, { timeout, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, env: mergedEnv }, (err, stdout, stderr) => {
+    exec(actualCmd, { timeout, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024, env: mergedEnv, windowsHide: true }, (err, stdout, stderr) => {
       if (err) return reject(err)
       resolve(stdout || stderr || '')
     })
@@ -753,7 +753,7 @@ function execStream(cmd, event, env = {}) {
       actualCmd = cmd.replace(/2>\/dev\/null/g, '2>nul').replace(/>\/dev\/null/g, '>nul').replace(/\|\|\s*true\b/g, '|| ver>nul')
       actualCmd = `chcp 65001 >nul & ${actualCmd}`
     }
-    const cp = exec(actualCmd, { maxBuffer: 50 * 1024 * 1024, env: mergedEnv })
+    const cp = exec(actualCmd, { maxBuffer: 50 * 1024 * 1024, env: mergedEnv, windowsHide: true })
     activeChildProcess = cp
     let lastSend = Date.now()
     const logsRingBuffer = []
