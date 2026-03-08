@@ -135,7 +135,26 @@ ipcMain.handle('deploy:preflight', async (_event, config) => {
   const hasAnyKey = (config.llms || []).some(m => m.apiKey && String(m.apiKey).trim())
   const hasProvider = (config.llms || []).some(m => m.provider)
   if (hasProvider && !hasAnyKey) issues.push('请至少配置一个有效的模型 API Key')
-  return { ok: issues.length === 0, issues }
+
+  // 检测旧版 openclaw 残留（仅 nodejs 模式）
+  const warnings = []
+  if (config.mode === 'nodejs' && config.target === 'local') {
+    let hasOldClaw = false
+    try { await execPromise('openclaw --version', 5000); hasOldClaw = true } catch {}
+    if (!hasOldClaw) {
+      // Windows: 检查 openclaw.cmd
+      if (process.platform === 'win32') {
+        try {
+          const npmBin = (await execPromise('npm bin -g', 5000)).trim()
+          const cmdPath = path.join(npmBin, 'openclaw.cmd')
+          if (fs.existsSync(cmdPath)) hasOldClaw = true
+        } catch {}
+      }
+    }
+    if (hasOldClaw) warnings.push({ code: 'OLD_OPENCLAW', message: '检测到已安装的旧版 OpenClaw，继续安装可能导致版本冲突。建议先卸载旧版再继续。' })
+  }
+
+  return { ok: issues.length === 0, issues, warnings: warnings || [] }
 })
 
 // ============================================================
@@ -924,8 +943,31 @@ function diagnoseError(err, step) {
   if (msg.includes('ssh') || msg.includes('ECONNREFUSED')) return 'SSH 连接失败。请检查服务器地址、端口、用户名和密码是否正确。'
   if (msg.includes('npm') && msg.includes('ENOTFOUND')) return 'npm 安装失败，无法访问 npm 镜像源。请检查网络连接。'
   if (msg.includes('openclaw') && msg.includes('not found')) return 'OpenClaw 未安装或未在 PATH 中。请重新运行部署。'
+  if (msg.includes('EEXIST') || msg.includes('already exists') || (msg.includes('openclaw') && msg.includes('npm'))) return '检测到旧版 OpenClaw 命令残留，导致新版本无法安装。请点击"卸载旧版后继续"按钮清理后重试。'
+  if (msg.includes('EPERM') || msg.includes('permission denied') || msg.includes('Access is denied')) return '权限不足。Windows 用户请以管理员身份运行本程序，或在 npm 全局目录权限设置中允许当前用户写入。'
+  if (msg.includes('ETIMEDOUT') || msg.includes('timeout')) return '网络超时。请检查网络连接，或在配置页面设置代理后重试。'
   return '请查看上方日志了解详情，或重试部署。'
 }
+
+// ============================================================
+// 卸载旧版 openclaw
+// ============================================================
+ipcMain.handle('deploy:uninstall-old', async () => {
+  const results = []
+  const packages = ['openclaw', '@qingchencloud/openclaw-zh']
+  for (const pkg of packages) {
+    try {
+      await execPromise(`npm uninstall -g ${pkg}`, 30000)
+      results.push(`✓ 已卸载 ${pkg}`)
+    } catch (e) {
+      const msg = e?.message || ''
+      if (!msg.includes('not found') && !msg.includes('does not exist')) {
+        results.push(`⚠ 卸载 ${pkg} 时出错：${msg.split('\n')[0]}`)
+      }
+    }
+  }
+  return { ok: true, results }
+})
 
 // ============================================================
 // Docker 环境安装

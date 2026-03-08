@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     execute: (config) => ipcRenderer.send('deploy:execute', config),
     cancel: () => ipcRenderer.invoke('deploy:cancel'),
     preflight: (config) => ipcRenderer.invoke('deploy:preflight', config),
+    uninstallOld: () => ipcRenderer.invoke('deploy:uninstall-old'),
     onProgress: (cb) => ipcRenderer.on('deploy:progress', (_e, data) => cb(data)),
     onLog: (cb) => ipcRenderer.on('deploy:log', (_e, data) => cb(data)),
     onError: (cb) => ipcRenderer.on('deploy:error', (_e, data) => cb(data)),

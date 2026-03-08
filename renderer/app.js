@@ -412,6 +412,19 @@ document.getElementById('btn-start-deploy').addEventListener('click', async () =
           btn.disabled = false; btn.textContent = '🚀 开始部署'; return
         }
       }
+      // 旧版残留警告
+      const oldClawWarning = (check.warnings || []).find(w => w.code === 'OLD_OPENCLAW')
+      if (oldClawWarning) {
+        const choice = await showOldClawDialog(oldClawWarning.message)
+        if (choice === 'cancel') { btn.disabled = false; btn.textContent = '🚀 开始部署'; return }
+        if (choice === 'uninstall') {
+          btn.textContent = '卸载旧版中...'
+          const r = await api.deploy.uninstallOld()
+          r.results.forEach(line => console.log(line))
+          showToast('旧版已卸载，继续部署', 'success')
+        }
+        // choice === 'continue' 直接继续
+      }
     } catch { /* 预检失败不阻塞 */ }
     btn.disabled = false; btn.textContent = '🚀 开始部署'
 
@@ -813,6 +826,31 @@ document.getElementById('btn-manage-open').addEventListener('click', () => {
   const url  = cachedGatewayToken ? `${base}/#token=${cachedGatewayToken}` : base
   api.shell.openExternal(url)
 })
+
+// ============================================================
+// 旧版 openclaw 残留对话框
+// ============================================================
+function showOldClawDialog(message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div')
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center'
+    overlay.innerHTML = `
+      <div style="background:var(--surface,#1e1e2e);border:1px solid var(--border,#333);border-radius:12px;padding:28px 32px;max-width:420px;width:90%">
+        <div style="font-size:15px;font-weight:600;margin-bottom:10px;color:var(--warning,#f59e0b)">⚠ 检测到旧版 OpenClaw</div>
+        <div style="font-size:13px;color:var(--text-secondary,#aaa);line-height:1.6;margin-bottom:20px">${message}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button id="dlg-uninstall" style="flex:1;padding:9px 0;border-radius:8px;border:none;background:var(--primary,#6366f1);color:#fff;font-size:13px;cursor:pointer">卸载旧版后继续</button>
+          <button id="dlg-continue" style="flex:1;padding:9px 0;border-radius:8px;border:1px solid var(--border,#333);background:transparent;color:var(--text,#eee);font-size:13px;cursor:pointer">忽略，直接继续</button>
+          <button id="dlg-cancel" style="flex:1;padding:9px 0;border-radius:8px;border:1px solid var(--border,#333);background:transparent;color:var(--text-secondary,#aaa);font-size:13px;cursor:pointer">取消</button>
+        </div>
+      </div>`
+    document.body.appendChild(overlay)
+    const cleanup = (choice) => { document.body.removeChild(overlay); resolve(choice) }
+    overlay.querySelector('#dlg-uninstall').onclick = () => cleanup('uninstall')
+    overlay.querySelector('#dlg-continue').onclick = () => cleanup('continue')
+    overlay.querySelector('#dlg-cancel').onclick = () => cleanup('cancel')
+  })
+}
 
 // ============================================================
 // Toast
