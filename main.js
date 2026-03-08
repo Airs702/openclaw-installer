@@ -152,6 +152,17 @@ ipcMain.handle('deploy:preflight', async (_event, config) => {
       }
     }
     if (hasOldClaw) warnings.push({ code: 'OLD_OPENCLAW', message: '检测到已安装的旧版 OpenClaw，继续安装可能导致版本冲突。建议先卸载旧版再继续。' })
+
+    // 检测 GitHub 443 连通性（nodejs 模式依赖 git 仓库）
+    const githubOk = await new Promise(resolve => {
+      const s = new net.Socket(); s.setTimeout(5000)
+      s.on('connect', () => { s.destroy(); resolve(true) })
+      s.on('error', () => resolve(false)); s.on('timeout', () => { s.destroy(); resolve(false) })
+      s.connect(443, 'github.com')
+    })
+    if (!githubOk) {
+      issues.push('当前网络无法访问 GitHub（github.com:443 不可达）。OpenClaw 的部分依赖来自 GitHub Git 仓库，必须能访问 GitHub 才能安装。请检查代理/VPN 后重试。')
+    }
   }
 
   return { ok: issues.length === 0, issues, warnings: warnings || [] }
@@ -1002,7 +1013,9 @@ function diagnoseError(err, step) {
   if (msg.includes('Cannot connect to the Docker daemon')) return 'Docker 引擎未运行。请启动 Docker Desktop 后重试。'
   if (msg.includes('pull access denied') || msg.includes('manifest unknown')) return '镜像拉取失败，所有镜像源均不可用。请检查网络连接或配置代理。'
   if (msg.includes('port is already allocated') || msg.includes('address already in use')) return '端口 18789 已被占用。请先停止旧的 OpenClaw 实例，或在运维管理中停止服务。'
-  if (msg.includes('ssh') || msg.includes('ECONNREFUSED')) return 'SSH 连接失败。请检查服务器地址、端口、用户名和密码是否正确。'
+  if ((msg.includes('github.com') || msg.includes('libsignal') || msg.includes('whiskeysockets')) && (msg.includes('443') || msg.includes('connect') || msg.includes('Failed'))) return '无法访问 GitHub（github.com:443 不可达）。OpenClaw 的部分依赖来自 GitHub Git 仓库，请开启代理/VPN 后重试。'
+  if (msg.includes('ECONNREFUSED') && !msg.includes('github')) return 'SSH 连接失败。请检查服务器地址、端口、用户名和密码是否正确。'
+  if (msg.includes('ssh') && (msg.includes('auth') || msg.includes('Authentication'))) return 'SSH 认证失败。请检查用户名和密码/密钥是否正确。'
   if (msg.includes('npm') && msg.includes('ENOTFOUND')) return 'npm 安装失败，无法访问 npm 镜像源。请检查网络连接。'
   if (msg.includes('openclaw') && msg.includes('not found')) return 'OpenClaw 未安装或未在 PATH 中。请重新运行部署。'
   if (msg.includes('EEXIST') || msg.includes('already exists') || (msg.includes('openclaw') && msg.includes('npm'))) return '检测到旧版 OpenClaw 命令残留，导致新版本无法安装。请点击"卸载旧版后继续"按钮清理后重试。'
@@ -1150,9 +1163,46 @@ async function ensureGitLocal(event, env = {}) {
 
 async function installOpenclawNode(config, event, env = {}) {
   const pkg = getNodePackage(config.imageChoice)
-  if (config.imageChoice === 'official') {
-    await execPromise('git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" 2>/dev/null; git config --global url."https://github.com/".insteadOf "git@github.com:" 2>/dev/null; git config --global url."https://hub.nuaa.cf/".insteadOf "https://github.com/" 2>/dev/null', 10000, env).catch(() => {})
+
+  // 所有模式都需要：把 git/ssh GitHub 依赖重写为 HTTPS，并尝试镜像加速
+  event.sender.send('deploy:log', '⏳ 配置 GitHub 访问加速...')
+  const gitRewriteCmds = [
+    'git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"',
+    'git config --global url."https://github.com/".insteadOf "git@github.com:"',
+  ]
+  // 检测 github.com 是否可达，不可达则尝试镜像
+  const githubOk = await new Promise(resolve => {
+    const s = new net.Socket(); s.setTimeout(4000)
+    s.on('connect', () => { s.destroy(); resolve(true) })
+    s.on('error', () => resolve(false)); s.on('timeout', () => { s.destroy(); resolve(false) })
+    s.connect(443, 'github.com')
+  })
+  if (!githubOk) {
+    event.sender.send('deploy:log', '⚠ github.com 不可达，尝试使用镜像站加速 git 依赖...')
+    // 尝试几个常见 GitHub 镜像
+    const mirrors = ['https://hub.nuaa.cf/', 'https://ghproxy.com/https://github.com/', 'https://mirror.ghproxy.com/https://github.com/']
+    let fastMirror = null
+    for (const m of mirrors) {
+      const ok = await new Promise(resolve => {
+        const s = new net.Socket(); s.setTimeout(3000)
+        const host = new URL(m).hostname
+        s.on('connect', () => { s.destroy(); resolve(true) })
+        s.on('error', () => resolve(false)); s.on('timeout', () => { s.destroy(); resolve(false) })
+        s.connect(443, host)
+      })
+      if (ok) { fastMirror = m; break }
+    }
+    if (fastMirror) {
+      gitRewriteCmds.push(`git config --global url."${fastMirror}".insteadOf "https://github.com/"`)
+      event.sender.send('deploy:log', `✓ 使用镜像站：${fastMirror}`)
+    } else {
+      event.sender.send('deploy:log', '⚠ 所有 GitHub 镜像均不可达，安装可能失败。建议开启代理后重试。')
+    }
   }
+  for (const cmd of gitRewriteCmds) {
+    await execPromise(cmd, 8000, env).catch(() => {})
+  }
+
   event.sender.send('deploy:log', `⏳ 正在安装 ${pkg}...`)
   await execStream(`npm install -g ${pkg}`, event, env)
   event.sender.send('deploy:log', `✓ ${pkg} 安装完成`)
